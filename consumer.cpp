@@ -8,6 +8,9 @@
 
 #include "include/amqp_asio_handler.h"
 
+#include "cpx.hh"
+#include <avro/Decoder.hh>
+
 int main(void)
 {
 
@@ -23,7 +26,13 @@ int main(void)
             uint64_t deliveryTag,
             bool redelivered)
     {
-        std::cout <<" [x] "<< std::string(message.body(), message.bodySize()) << std::endl;
+        std::istringstream iss(std::string(message.body(), message.bodySize()));
+        auto in = avro::istreamInputStream(iss, 32);
+        avro::DecoderPtr d = avro::binaryDecoder();
+        d->init(*in);
+        c::cpx c2;
+        avro::decode(*d, c2);
+        std::cout << " [x] " << '(' << c2.re << ", " << c2.im << ')' << std::endl;
     };
 
     AMQP::QueueCallback callback =

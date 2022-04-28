@@ -9,6 +9,9 @@
 
 #include <iostream>
 
+#include "cpx.hh"
+#include <avro/Encoder.hh>
+
 namespace po = boost::program_options;
 
 int main(int argc, char** argv) 
@@ -40,8 +43,18 @@ int main(int argc, char** argv)
     // create a temporary queue
     channel.declareExchange("logs", AMQP::fanout).onSuccess([&]()
     {
+        std::ostringstream oss;
+        auto out = avro::ostreamOutputStream(oss, 32);
+        avro::EncoderPtr e = avro::binaryEncoder();
+        e->init(*out);
+        c::cpx c1;
+        c1.re = 1.56;
+        c1.im = 9.1378;
+        avro::encode(*e, c1);
+        out->flush();
+        auto msg  = oss.str();
         bool status = channel.publish("logs", "", msg);
-        std::cout << " [x] Sent " << msg << " " << status << std::endl;
+        std::cout << " [x] Sent " << msg << std::endl;
         connection.close();
     });
     
